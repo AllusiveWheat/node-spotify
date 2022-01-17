@@ -8,6 +8,7 @@ import { createConnection } from "typeorm";
 import { v4 } from "uuid";
 import { User } from "./User";
 import Redis from "ioredis";
+import qs from "qs";
 import connctRedis from "connect-redis";
 import cors from "cors";
 import fs, { appendFile } from "fs";
@@ -117,10 +118,8 @@ const main = async (): Promise<void> => {
           user.displayName = profile.displayName;
           user.__json = JSON.stringify(profile);
           user.save();
-          console.log(user);
           spotifyApi.setAccessToken(accessToken);
           spotifyApi.setRefreshToken(refreshToken);
-          console.log("profile", profile);
           done(null, user);
         }
       }
@@ -129,7 +128,6 @@ const main = async (): Promise<void> => {
 
   app.get("/", (req, res) => {
     if (!req.user) {
-      console.log("req.user", req.user);
       res.send("You are not logged in");
     } else {
       res.send(`You are logged in as ${req.user.displayName}`);
@@ -147,7 +145,6 @@ const main = async (): Promise<void> => {
       authInfo: true,
     }),
     (req, res) => {
-      console.log("req.user", req.user);
       res.redirect("http://localhost:3000/loggedin");
     }
   );
@@ -158,15 +155,99 @@ const main = async (): Promise<void> => {
   });
 
   app.get("/playing", (req, res) => {
-    console.log("req.user", req.user);
     if (!req.user) {
       res.send("You are not logged in");
     } else {
       spotifyApi.setAccessToken(req.user.spotifyAccessToken);
       spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
       spotifyApi.getMyCurrentPlaybackState().then((data) => {
+        // console.log(data.body.item);
         res.send(data.body.item);
       });
+    }
+  });
+  app.put("/playing", (req, res) => {
+    // parsed query string from req.query
+    const parsed = qs.stringify(req.query);
+    const posBase = parsed.split("=")[1];
+    console.log("posBase:", posBase);
+    const pos = parseInt(posBase);
+    console.log("pos:", pos);
+    if (!req.user) {
+      res.send("You are not logged in");
+    } else {
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+      spotifyApi.seek(pos).then((data) => {
+        res.send(data);
+      });
+    }
+  });
+
+  app.get("/pos", (req, res) => {
+    if (!req.user) {
+      res.send("You are not logged in").status(401);
+    } else {
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+      spotifyApi.getMyCurrentPlaybackState().then((data) => {
+        res.json(data.body.progress_ms);
+      });
+    }
+  });
+  app.post("/play", (req, res) => {
+    if (!req.user) {
+      res.send("You are not logged in").status(401);
+    } else {
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+      spotifyApi.play().then((data) => {
+        res.send(data);
+      });
+    }
+  });
+  app.post("/pause", (req, res) => {
+    if (!req.user) {
+      res.send("You are not logged in").status(401);
+    } else {
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+      // if already paused, unpause
+      spotifyApi.spotifyApi.spotifyApi.pause().then((data) => {
+        res.send(data);
+      });
+    }
+  });
+  app.post("/next", (req, res) => {
+    if (!req.user) {
+      res.send("You are not logged in").status(401);
+    } else {
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+    }
+  });
+  app.post("/prev", (req, res) => {
+    if (!req.user) {
+      res.send("You are not logged in").status(401);
+    } else {
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+    }
+  });
+  app.post("/shuffle", (req, res) => {
+    if (!req.user) {
+      res.send("You are not logged in").status(401);
+    } else {
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+    }
+  });
+  app.post("/repeat", (req, res) => {
+    if (!req.user) {
+      res.send("You are not logged in").status(401);
+    } else {
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
     }
   });
 

@@ -31,6 +31,7 @@
     "@types/express-session": "^1.17.4",
     "@types/node": "^17.0.8",
     "@types/passport": "^1.0.7",
-    "@types/passport-spotify": "^2.0.1"
+    "@types/passport-spotify": "^2.0.1",
+    "@types/spotify-web-api-node": "^5.0.6"
   }
 }

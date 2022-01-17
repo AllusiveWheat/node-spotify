@@ -213,9 +213,6 @@ const main = async (): Promise<void> => {
       spotifyApi.setAccessToken(req.user.spotifyAccessToken);
       spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
       // if already paused, unpause
-      spotifyApi.spotifyApi.spotifyApi.pause().then((data) => {
-        res.send(data);
-      });
     }
   });
   app.post("/next", (req, res) => {

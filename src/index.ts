@@ -5,21 +5,48 @@ import passport from "passport";
 import session from "express-session";
 import { Strategy as SpotifyStrategy } from "passport-spotify";
 import { createConnection } from "typeorm";
-async () => {
+import { v4 } from "uuid";
+import { User } from "./User";
+import Redis from "ioredis";
+import connctRedis from "connect-redis";
+import cors from "cors";
+import fs, { appendFile } from "fs";
+const main = async (): Promise<void> => {
+  const conn = await createConnection({
+    type: "postgres",
+    database: process.env.DB_NAME || "node",
+    username: "postgres",
+    password: process.env.DB_PASSWORD || "postgres",
+    logging: true,
+    synchronize: true,
+    entities: [User],
+  });
+
+  const redis = new Redis();
+  const RedisStore = connctRedis(session);
   const app = express();
   dotenv.config();
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+  app.use(
+    cors({
+      origin: "http://localhost:3000",
+      credentials: true,
+    })
+  );
   passport.serializeUser((user, done) => {
-    done(null, user);
-  });
-  passport.deserializeUser((user: any, done) => {
-    done(null, user);
+    done(null, user.id);
   });
 
+  passport.deserializeUser(async (id: string, done) => {
+    const user = await User.findOne(id);
+    done(null, user);
+  });
   app.use(
     session({
       secret: "keyboard cat",
+      name: "qid",
+      store: new RedisStore({ client: redis }),
       resave: false,
       saveUninitialized: true,
       cookie: {
@@ -37,7 +64,7 @@ async () => {
   const spotifyApi = new SpotifyWebApi({
     clientId: clientId,
     clientSecret: clientSecret,
-    redirectUri: "http://localhost:3000/callback",
+    redirectUri: "http://localhost:4000/auth/spotify/callback",
   });
 
   passport.use(
@@ -45,22 +72,57 @@ async () => {
       {
         clientID: clientId,
         clientSecret: clientSecret,
-        callbackURL: "http://localhost:3000/callback",
+        callbackURL: "http://localhost:4000/auth/spotify/callback",
         scope: [
           "user-read-email",
           "user-read-private",
           "user-read-currently-playing",
+          "user-read-playback-state",
+          "user-modify-playback-state",
+          "user-library-modify",
+          "user-library-read",
+          "streaming",
+          "app-remote-control",
+          "user-read-playback-position",
+          "user-top-read",
+          "user-read-recently-played",
         ],
         showDialog: true,
       },
-      (accessToken, refreshToken, expires_in, profile, done) => {
-        console.log("accessToken", accessToken);
-        console.log("refreshToken", refreshToken);
-        console.log("expires_in", expires_in);
-        spotifyApi.setAccessToken(accessToken);
-        spotifyApi.setRefreshToken(refreshToken);
-        console.log("profile", profile);
-        done(null, profile);
+      async (accessToken, refreshToken, expires_in, profile, done) => {
+        const existingUsers = await User.find();
+
+        const existingUser = existingUsers.find(
+          (user) => user.spotifyId === profile.id
+        );
+        if (existingUser) {
+          existingUser.spotifyAccessToken = accessToken;
+          existingUser.spotifyRefreshToken = refreshToken;
+          existingUser.spotifyExpiresIn = expires_in;
+          existingUser.displayName = profile.displayName;
+          existingUser.__json = JSON.stringify(profile);
+
+          await existingUser.save();
+          return done(null, existingUser);
+        } else {
+          const user = new User();
+          user.id = v4();
+          user.email = profile.emails![0].value;
+          user.spotifyAccessToken = accessToken;
+          user.spotifyRefreshToken = refreshToken;
+          user.password = accessToken;
+          user.spotifyExpiresIn = expires_in;
+          user.spotifyId = profile.id;
+          user.spotifyImageUrl = profile.photos![0];
+          user.displayName = profile.displayName;
+          user.__json = JSON.stringify(profile);
+          user.save();
+          console.log(user);
+          spotifyApi.setAccessToken(accessToken);
+          spotifyApi.setRefreshToken(refreshToken);
+          console.log("profile", profile);
+          done(null, user);
+        }
       }
     )
   );
@@ -74,21 +136,43 @@ async () => {
     }
   });
 
-  app.get("/auth", passport.authenticate("spotify"));
-
+  app.get("/auth/spotify", passport.authenticate("spotify"));
+  app.get("/checklogin", (req, res) => {
+    res.status(req.user ? 200 : 401).send("OK");
+  });
   app.get(
-    "/callback",
+    "/auth/spotify/callback",
     passport.authenticate("spotify", {
       userProperty: "user",
       authInfo: true,
     }),
     (req, res) => {
       console.log("req.user", req.user);
-      res.redirect("/");
+      res.redirect("http://localhost:3000/loggedin");
     }
   );
 
-  app.listen(3000, () => {
+  app.get("/logout", (req, res) => {
+    req.logout();
+    res.redirect("/");
+  });
+
+  app.get("/playing", (req, res) => {
+    console.log("req.user", req.user);
+    if (!req.user) {
+      res.send("You are not logged in");
+    } else {
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+      spotifyApi.getMyCurrentPlaybackState().then((data) => {
+        res.send(data.body.item);
+      });
+    }
+  });
+
+  app.listen(4000, () => {
     console.log("Server started on port 3000");
   });
 };
+
+main();

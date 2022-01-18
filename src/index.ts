@@ -202,7 +202,13 @@ const main = async (): Promise<void> => {
       spotifyApi.setAccessToken(req.user.spotifyAccessToken);
       spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
       spotifyApi.play().then((data) => {
-        res.send(data);
+        if (data.statusCode === 204) {
+          res.send(data);
+        } else {
+          spotifyApi.pause().then((data) => {
+            res.send(data);
+          });
+        }
       });
     }
   });
@@ -212,7 +218,12 @@ const main = async (): Promise<void> => {
     } else {
       spotifyApi.setAccessToken(req.user.spotifyAccessToken);
       spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
-      // if already paused, unpause
+      try {
+        const resp = spotifyApi.pause();
+        res.send(resp);
+      } catch (err) {
+        console.log(err);
+      }
     }
   });
   app.post("/next", (req, res) => {
@@ -221,6 +232,11 @@ const main = async (): Promise<void> => {
     } else {
       spotifyApi.setAccessToken(req.user.spotifyAccessToken);
       spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+      spotifyApi.skipToNext().then((data) => {
+        if (data.statusCode === 204) {
+          res.send(data);
+        } else res.send(data).status(500);
+      });
     }
   });
   app.post("/prev", (req, res) => {
@@ -229,6 +245,13 @@ const main = async (): Promise<void> => {
     } else {
       spotifyApi.setAccessToken(req.user.spotifyAccessToken);
       spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+      spotifyApi.skipToPrevious().then((data) => {
+        if (data.statusCode === 204) {
+          res.send(data).status(200);
+        } else if (data.statusCode === 403) {
+          res.send(data).status(500);
+        }
+      });
     }
   });
   app.post("/shuffle", (req, res) => {

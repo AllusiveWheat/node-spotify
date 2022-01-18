@@ -5,9 +5,14 @@ const loggedin = () => {
   const [image, setImage] = useState<any>("");
   const [artist, setArtist] = useState<any>([{}]);
   const [pos, setPos] = useState<any>(0);
-
+  const [time, setTime] = useState<string>();
   let loggedIn = true;
-
+  function convertTime(mill: number): string {
+    let minutes = Math.floor(mill / 60000);
+    let seconds = (mill % 60000) / 1000;
+    let x = parseFloat(seconds.toFixed(0));
+    return `${minutes}:${x < 10 ? "0" : ""}${x}`;
+  }
   useEffect(() => {
     axios
       .get("http://localhost:4000/checklogin", { withCredentials: true })
@@ -17,13 +22,9 @@ const loggedin = () => {
           axios
             .get("http://localhost:4000/playing", { withCredentials: true })
             .then((res) => {
-              console.log(res.data);
-              console.log(res.data.album.images[0].url);
               setImage(res.data.album.images[0].url);
-              console.log(res.data.artists[0].name);
               setArtist(res.data.artists);
               setPlaying(res.data);
-              console.log(res.data.duration_ms);
             });
           axios
             .get(`http://localhost:4000/pos`, {
@@ -33,6 +34,28 @@ const loggedin = () => {
               console.log(res);
               setPos(res.data);
             });
+
+          setInterval(() => {
+            axios
+              .get(`http://localhost:4000/pos`, {
+                withCredentials: true,
+              })
+              .then((res) => {
+                setPos(res.data);
+              });
+          }, 1000);
+
+          setInterval(() => {
+            axios
+              .get("http://localhost:4000/playing", { withCredentials: true })
+              .then((res) => {
+                setImage(res.data.album.images[0].url);
+                setArtist(res.data.artists);
+                setPlaying(res.data);
+              });
+          }, 1000);
+        } else {
+          loggedIn = false;
         }
       });
   }, []);
@@ -63,7 +86,6 @@ const loggedin = () => {
           });
         }}
       />
-
       <button
         onClick={() => {
           axios({
@@ -75,7 +97,6 @@ const loggedin = () => {
       >
         Play
       </button>
-
       <button
         onClick={() => {
           axios({
@@ -87,6 +108,30 @@ const loggedin = () => {
       >
         Pause
       </button>
+      <button
+        onClick={() => {
+          axios({
+            method: "post",
+            url: `http://localhost:4000/next`,
+            withCredentials: true,
+          });
+        }}
+      >
+        Next
+      </button>
+      <button
+        onClick={() => {
+          axios({
+            method: "post",
+            url: `http://localhost:4000/prev`,
+            withCredentials: true,
+          });
+        }}
+      >
+        Prev
+      </button>
+      {/* Time in Song */}
+      <h3>{convertTime(pos)}</h3>
     </div>
   );
 };

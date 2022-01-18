@@ -16,17 +16,17 @@ const loggedin = () => {
   useEffect(() => {
     axios
       .get("http://localhost:4000/checklogin", { withCredentials: true })
-      .then((res) => {
+      .then(async (res) => {
         if (res.status === 200) {
           loggedIn = true;
-          axios
+          await axios
             .get("http://localhost:4000/playing", { withCredentials: true })
             .then((res) => {
               setImage(res.data.album.images[0].url);
               setArtist(res.data.artists);
               setPlaying(res.data);
             });
-          axios
+          await axios
             .get(`http://localhost:4000/pos`, {
               withCredentials: true,
             })
@@ -35,8 +35,8 @@ const loggedin = () => {
               setPos(res.data);
             });
 
-          setInterval(() => {
-            axios
+          setInterval(async () => {
+            await axios
               .get(`http://localhost:4000/pos`, {
                 withCredentials: true,
               })
@@ -45,8 +45,8 @@ const loggedin = () => {
               });
           }, 1000);
 
-          setInterval(() => {
-            axios
+          setInterval(async () => {
+            await axios
               .get("http://localhost:4000/playing", { withCredentials: true })
               .then((res) => {
                 setImage(res.data.album.images[0].url);
@@ -75,11 +75,11 @@ const loggedin = () => {
         onTimeUpdate={(e) => {
           setPos(pos);
         }}
-        onChange={(e) => {
+        onChange={async (e) => {
           console.log(e.target.value);
           console.log(loggedIn);
           setPos(e.target.value);
-          axios({
+          await axios({
             method: "put",
             url: `http://localhost:4000/playing?pos=${e.target.value}`,
             withCredentials: true,
@@ -87,8 +87,8 @@ const loggedin = () => {
         }}
       />
       <button
-        onClick={() => {
-          axios({
+        onClick={async () => {
+          await axios({
             method: "post",
             url: `http://localhost:4000/play`,
             withCredentials: true,
@@ -98,8 +98,8 @@ const loggedin = () => {
         Play
       </button>
       <button
-        onClick={() => {
-          axios({
+        onClick={async () => {
+          await axios({
             method: "post",
             url: `http://localhost:4000/pause`,
             withCredentials: true,
@@ -109,8 +109,8 @@ const loggedin = () => {
         Pause
       </button>
       <button
-        onClick={() => {
-          axios({
+        onClick={async () => {
+          await axios({
             method: "post",
             url: `http://localhost:4000/next`,
             withCredentials: true,
@@ -120,8 +120,8 @@ const loggedin = () => {
         Next
       </button>
       <button
-        onClick={() => {
-          axios({
+        onClick={async () => {
+          await axios({
             method: "post",
             url: `http://localhost:4000/prev`,
             withCredentials: true,

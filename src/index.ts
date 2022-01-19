@@ -17,7 +17,7 @@ const main = async (): Promise<void> => {
     type: "postgres",
     database: process.env.DB_NAME || "node",
     username: "postgres",
-    password: process.env.DB_PASSWORD || "postgres",
+    password: process.env.DB_PASSWORD || "1",
     logging: true,
     synchronize: true,
     entities: [User],
@@ -268,11 +268,43 @@ const main = async (): Promise<void> => {
     } else {
       spotifyApi.setAccessToken(req.user.spotifyAccessToken);
       spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+      spotifyApi.setRepeat(req.body.state).then((data) => {
+        res.send(data);
+      });
     }
   });
 
+  app.get("/top", (req, res) => {
+    if (!req.user) {
+      res.send("You are not logged in").status(401);
+    } else {
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+      spotifyApi.getMyTopArtists().then((data) => {
+        res.send(data.body.items);
+      });
+    }
+  });
+
+  app.get("/toptracks", (req, res) => {
+    if (!req.user) {
+      res.send("You are not logged in").status(401);
+    } else {
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+      spotifyApi
+        .getMyTopTracks({
+          time_range: "short_term",
+        })
+        .then((data) => {
+          res.send(data.body.items);
+        });
+    }
+  });
+
+  app.get("/top");
   app.listen(4000, () => {
-    console.log("Server started on port 3000");
+    console.log("Server started on port 4000");
   });
 };
 

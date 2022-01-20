@@ -322,10 +322,53 @@ const main = async (): Promise<void> => {
       });
     }
   });
+  app.post("/play", (req, res) => {
+    if (!req.user) {
+      res.send("You are not logged in").status(401);
+    } else {
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+      spotifyApi.searchTracks(req.body.song).then((data) => {
+        spotifyApi
+          .play({
+            uris: [data.body.tracks!.items[0].uri],
+          })
+          .then((data) => {
+            res.send(data);
+          });
+      });
+    }
+  });
+  app.get("/play", (req, res) => {
+    if (!req.user) {
+      res.send("You are not logged in").status(401);
+    } else {
+      console.log(req.query);
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+      spotifyApi
+        .play({ uris: [`spotify:track:${req.query.id}`] })
+        .then((data) => {
+          res.send(data);
+        });
+    }
+  });
+
+  app.post("/playID", (req, res) => {
+    if (!req.user) {
+      res.send("You are not logged in").status(401);
+    } else {
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+      spotifyApi.play({ uris: [req.body.song] }).then((data) => {
+        console.log("Here");
+        res.send(data);
+      });
+    }
+  });
 
   app.listen(4000, () => {
     console.log("Server started on port 4000");
   });
 };
-
 main();

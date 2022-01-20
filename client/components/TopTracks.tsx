@@ -21,13 +21,6 @@ const TopTracks = () => {
               console.log(res.data);
               setGenres(res.data);
             });
-          await axios
-            .post(`http://localhost:4000/play/${name}`, {
-              withCredentials: true,
-            })
-            .then((res) => {
-              console.log(res);
-            });
         }
       });
   }, []);

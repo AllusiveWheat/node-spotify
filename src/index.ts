@@ -302,7 +302,27 @@ const main = async (): Promise<void> => {
     }
   });
 
-  app.get("/top");
+  app.get("/topgenres", (req, res) => {
+    if (!req.user) {
+      res.send("You are not logged in").status(401);
+    } else {
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+      spotifyApi.getMyTopArtists().then((data) => {
+        const genres: any = [];
+        data.body.items.forEach((artist) => {
+          artist.genres.forEach((genre) => {
+            if (!genres.includes(genre)) {
+              console.log(genre);
+              genres.push(genre);
+            }
+          });
+        });
+        res.send(genres);
+      });
+    }
+  });
+
   app.listen(4000, () => {
     console.log("Server started on port 4000");
   });

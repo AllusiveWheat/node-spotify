@@ -136,7 +136,14 @@ const main = async (): Promise<void> => {
 
   app.get("/auth/spotify", passport.authenticate("spotify"));
   app.get("/checklogin", (req, res) => {
-    res.status(req.user ? 200 : 401).send("OK");
+    if (!req.user) {
+      res.status(401).send("You are not logged in");
+    } else {
+      spotifyApi.setRefreshToken(req.user!.spotifyRefreshToken);
+      spotifyApi.refreshAccessToken().then((data) => {
+        res.send(data.body).status(200);
+      });
+    }
   });
   app.get(
     "/auth/spotify/callback",
@@ -371,4 +378,5 @@ const main = async (): Promise<void> => {
     console.log("Server started on port 4000");
   });
 };
+
 main();

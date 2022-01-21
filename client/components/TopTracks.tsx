@@ -21,6 +21,7 @@ const TopTracks = () => {
               console.log(res.data);
               setGenres(res.data);
             });
+        } else {
         }
       });
   }, []);

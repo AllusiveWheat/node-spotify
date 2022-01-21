@@ -5,6 +5,7 @@ const Player = () => {
   const [playing, setPlaying] = useState<any>([]);
   const [image, setImage] = useState<any>("");
   const [artist, setArtist] = useState<any>([{}]);
+  const [genere, setGenere] = useState<any>([{}]);
   const [pos, setPos] = useState<any>(0);
   useEffect(() => {
     axios
@@ -18,6 +19,14 @@ const Player = () => {
               setArtist(res.data.artists);
               setPlaying(res.data);
             });
+          await axios
+            .get("http://localhost:4000/playingArtists", {
+              withCredentials: true,
+            })
+            .then((res) => {
+              setGenere(res.data.genres);
+            });
+
           await axios
             .get(`http://localhost:4000/pos`, {
               withCredentials: true,
@@ -50,11 +59,26 @@ const Player = () => {
         }
       });
   }, []);
+
+  //console.log(playing);
+  //console.log(artist);
+  // console.log(genere);
   return (
-    <div className="player">
+    <div className="bg-gray-800">
       <h2>{playing.name}</h2>
       {artist.map((artist: any) => (
-        <h3 key={artist.id}>{artist.name}</h3>
+        <>
+          <h3 key={artist.id} className="text-blue-500">
+            {artist.name}
+          </h3>
+          <h5 key={artist.id}>
+            {genere.map((genre: any) => (
+              <span className="text-green-400" key={genre}>
+                {genre + " "}
+              </span>
+            ))}
+          </h5>
+        </>
       ))}
       <img src={image} key={artist.id} height={100} width={100} />
       <input

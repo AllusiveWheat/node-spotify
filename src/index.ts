@@ -167,12 +167,39 @@ const main = async (): Promise<void> => {
     } else {
       spotifyApi.setAccessToken(req.user.spotifyAccessToken);
       spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
-      spotifyApi.getMyCurrentPlaybackState().then((data) => {
-        // console.log(data.body.item);
-        res.send(data.body.item);
-      });
+      spotifyApi
+        .getMyCurrentPlaybackState({
+          market: "US",
+        })
+        .then((data) => {
+          console.log(data.body.item);
+          res.send(data.body.item);
+        });
     }
   });
+
+  app.get("/playingArtists", (req, res) => {
+    if (!req.user) {
+      res.send("You are not logged in");
+    } else {
+      spotifyApi.setAccessToken(req.user.spotifyAccessToken);
+      spotifyApi.setRefreshToken(req.user.spotifyRefreshToken);
+      spotifyApi
+        .getMyCurrentPlaybackState({
+          market: "US",
+        })
+        .then((data) => {
+          if (data != null) {
+            console.log(data.body.item);
+            //@ts-ignore
+            spotifyApi.getArtist(data.body.item.artists[0].id).then((data) => {
+              res.send(data.body);
+            });
+          }
+        });
+    }
+  });
+
   app.put("/playing", (req, res) => {
     // parsed query string from req.query
     const parsed = qs.stringify(req.query);

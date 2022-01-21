@@ -3,7 +3,7 @@ import axios from "axios";
 const TopTracks = () => {
   const [tracks, setTracks] = useState<any>([]);
   const [genres, setGenres] = useState<any>([]);
-  const [name, setName] = useState<any>("");
+  const [artists, setArtists] = useState<any>([]);
   useEffect(() => {
     axios
       .get("http://localhost:4000/checklogin", { withCredentials: true })
@@ -15,6 +15,13 @@ const TopTracks = () => {
               console.log(res.data);
               setTracks(res.data);
             });
+          await axios
+            .get("http://localhost:4000/top", { withCredentials: true })
+            .then((res) => {
+              console.log(res.data);
+              setArtists(res.data);
+            });
+
           await axios
             .get("http://localhost:4000/topgenres", { withCredentials: true })
             .then((res) => {
@@ -55,6 +62,25 @@ const TopTracks = () => {
         {genres.map((genre: any) => (
           <div className="genre text-center bg-center mt-4" key={genre}>
             <h3>{genre}</h3>
+          </div>
+        ))}
+      </div>
+      <div className="artists">
+        {artists.map((artist: any) => (
+          <div className="artist  bg-center mt-4" key={artist.id}>
+            <a href={artist.external_urls.spotify} className="text-blue-600">
+              <img src={artist.images[0].url} height={100} width={100} />
+            </a>
+            <a href={artist.external_urls.spotify} className="text-blue-600">
+              <h3>{artist.name}</h3>
+            </a>
+            <h4>
+              {artist.genres.map((genre: any) => (
+                <span className="text-gray-600" key={genre}>
+                  {genre + " "}
+                </span>
+              ))}
+            </h4>
           </div>
         ))}
       </div>
